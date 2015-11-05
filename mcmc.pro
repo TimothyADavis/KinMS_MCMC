@@ -5,23 +5,14 @@ PRO mcmc,param,$
 COMMON KinMS_COMMON, fdata,obspars
 
   
-;MCMC parameter estimator
-;based on sipnet
-;Note: this can work for multiple data types (likelihood function
-;would do the math)
-;SEE BELOW FOR AN EXAMPLE FOR HOW TO USE IN IDL
-
-;---REQUIRED INPUTS---
-;x is the input data for the model (no requirements on format except
-;for what likelihood and model expect)
-;y is the output data to compare (same as above)
+;MCMC code for use with KinMS
 
 ;param is a structure  with the following properties
 ;param.name is an arry of name
 ;param.value is parameter value (initial guess) array
 ;param.max max value array
 ;param.min min value array
-;param.knob is knob array (not used in this version, can be all zero)
+;param.knob is knob array 
 ;param.changeable is whether it should be fixed (0) or estimated (1)
 
 ;---OPTIONAL KEYWORDS---
@@ -44,11 +35,9 @@ COMMON KinMS_COMMON, fdata,obspars
 ;outputvalues are accepted parameter values (same format as param.value)
 ;outputy is the model run with the best outputvalues parameter set (same format as y)
 
-  A_STAR = 0.1
-  THRESH = 0.02 
+
   DEC = 0.95
   INC = 1/DEC
-  add_fraction = 1.0
 
 
 ;set defaults
@@ -105,7 +94,7 @@ COMMON KinMS_COMMON, fdata,obspars
          !p.multi=[0,size2,size]
          for i=0,windows-1 do begin
             if max[change[i]]-min[change[i]] gt 1000 then ylog=1 else ylog=0
-            cgplot,[0],[value[change[i]]],yrange=[min[change[i]],max[change[i]]],xrange=[-1,numatonce+1],psym=1,/xstyle,/ystyle,ylog=ylog,xtitle=param.name[change[i]]
+            cgplot,[0],[value[change[i]]],yrange=[min[change[i]],max[change[i]]],xrange=[-1,numatonce+1],psym=1,/xstyle,/ystyle,ylog=ylog,xtitle=param.name[change[i]],charsize=1.5
             psave[i]={p:!p,x:!x,y:!y}
          endfor
       endif
@@ -146,7 +135,7 @@ COMMON KinMS_COMMON, fdata,obspars
         IF accept EQ 1 THEN BEGIN 
           ll_old = ll
           yes++
-          knob[ichg]=(knob[ichg]*(1+((INC-1)*param.knobchange[ichg])))<(1.0)   
+          knob[ichg]=(knob[ichg]*(1+((INC-1))))<(1.0)   
           if keyword_set(plotchains) then begin
              wind2look=where(ichg eq change)
                 !p=psave[wind2look].p
@@ -158,7 +147,7 @@ COMMON KinMS_COMMON, fdata,obspars
          ; stop
         ENDIF ELSE BEGIN
           value[ichg] = oldval
-          knob[ichg] = (knob[ichg]*(1-((1-DEC)*param.knobchange[ichg])))
+          knob[ichg] = (knob[ichg]*(1-((1-DEC))))
        ENDELSE
  ENDFOR
 
@@ -175,7 +164,7 @@ COMMON KinMS_COMMON, fdata,obspars
          means[whilecounter,change[iternum]]=moms[0]
          stdevs[whilecounter,change[iternum]]=moms[1]
          binsize=((max(accepted_vals[w,change[iternum]])-min(accepted_vals[w,change[iternum]]))/float(n_elements(w)))*5.
-           if binsize ne 0.0 then if keyword_set(plotchains) then plothist,accepted_vals[w,change[iternum]],bin=binsize else print,"converged to precision"
+           if binsize ne 0.0 then if keyword_set(plotchains) then plothist,accepted_vals[w,change[iternum]],bin=binsize,xtitle=param.name[change[iternum]],charsize=1.5 else print,"converged to precision"
         endfor
       !p.multi=[0,1,1]
    endif
@@ -184,16 +173,20 @@ COMMON KinMS_COMMON, fdata,obspars
      if whilecounter eq 0 then begin
         yes=0l
      endif else begin
-                                ; stop
+                              
         
+        errorvalue=param.precision[change]
+        werrorneeded=where(param.precision[change] eq 0)
+        if werrorneeded[0] ne -1 then errorvalue[werrorneeded]=abs(2*sqrt((stdevs[whilecounter,change]^2)+(stdevs[whilecounter-1,change]^2))) > (0.01*means[whilecounter,change])
+       
         
-        errorvalue=abs(2*sqrt((stdevs[whilecounter,change]^2)+(stdevs[whilecounter-1,change]^2)))
-        errorvalue = abs(((errorvalue/means[whilecounter,change]) > 0.01)*means[whilecounter,change])
-        
-        IF min(abs(means[whilecounter,change]-means[whilecounter-1,change]) le errorvalue) AND yes gt 3 then begin
+        test=abs(means[whilecounter,change]-means[whilecounter-1,change]) le errorvalue
+        IF min(test) AND yes gt 3 then begin
            print,"Chain converged" 
         endif else begin
-           print,"Chain has not converged" ; [enter to continue]"
+           print,"Chain has not converged"
+           Print,"Still varying:"
+           print,param.name[change[where(test eq 0)]]
          endelse
          IF min(abs(means[whilecounter,change]-means[whilecounter-1,change]) le errorvalue) AND yes gt 3 then begin
             ;; let the chain converge only if ALL the parameters that
@@ -230,6 +223,7 @@ time=systime(/sec)
   IF n_elements(endvalue) EQ 0 THEN BEGIN
     IF ~keyword_set(quiet) THEN print,'No chains converged, try changing mcmc iterations'
     IF ~keyword_set(quiet) THEN print,'Starting from best value'
+    IF ~keyword_set(quiet) THEN print,'  Values: ',bestvalue
     endvalue = bestvalue
     endll = bestll
     endknob = knob
