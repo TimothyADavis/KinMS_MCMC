@@ -7,42 +7,22 @@ function mkkinms_model,param,_extra=_extra,filename=filename,ret_inclouds=ret_in
   ;;;;;;;;;;;;;;;
     !EXCEPT = 0
     x=obspars.vrad                                                    ;;; radius vector for sbprofile
-    fx=gaussian(x,[1,param[7],2.])                              ;;; Ring morphology
+    fx=gaussian(x,[1,param[7],param[8]])                                    ;;; Ring morphology
     x1=obspars.vrad                                                   ;;; radius vector for velocity  
     vel=interpol([0,1,1,1],[0.01,1,10,200],x1)*param[6]               ;;; impose a flat velocity profile with a fitted normalisation
     KinMS,obspars.xsize,obspars.ysize,obspars.vsize,obspars.dx,obspars.dy,obspars.dv,obspars.beamsize,param[2],velrad=x1,velprof=vel,nsamps=obspars.nsamps,cubeout=fsim,posang=param[1],intflux=param[0],gassigma=1.,_extra=_extra,ra=obspars.ra,dec=obspars.dec,phasecen=[param[3],param[4]],voffset=param[5],filename=filename,inclouds=inclouds,sbrad=x,sbprof=fx,/fixseed ;;; run the model.
     return,fsim
  end
-FUNCTION mkkinms_likelihood,param,model,_EXTRA=ex
-  COMMON KinMS_COMMON, fdata,obspars
-  ;;;;;;;;;;;;;;;
-  ;;; This function calls the model, then evaulates the log likelihood.
-  ;;;;;;;;;;;;;;;
-  !EXCEPT = 0
-  modout = call_FUNCTION(model,param,_EXTRA=ex)
-  w=where(finite(fdata) and finite(modout),nvalid)
-  IF nvalid GT 1 THEN BEGIN      
-     chisq = total(((fdata[w]-modout[w])^2)/((obspars.rms)^2))
-     loglike=0.5*chisq
-  ENDIF ELSE BEGIN
-     loglike = 1e31
-  ENDELSE 
-  IF loglike EQ 1e31 THEN stop
-  return,loglike
-END
 pro KinMS_mcmc_example
   COMMON KinMS_COMMON, fdata,obspars
   ;;;;;;;;;;;;;;;
   ;;; This is a test procedure for KinMS_mcmc, setting up everything
   ;;; for fitting the molecular ring in NGC4324, based on CARMA observations
-  ;;; of Alatalo et al., 2012
+  ;;; of Alatalo et al., 2013
   ;;;;;;;;;;;;;;;  
   
 
-  ;;; Here we define the velocity curve, but normalised to one. We then
-  ;;; rescale later with a single paramter for vmax. One could also
-  ;;; fit the whole curve using the formalism below- but this is
-  ;;; enough here.
+  ;;; Here we define the radius vector.
   vrad=(findgen(64))
   ;;;
 
@@ -58,24 +38,25 @@ pro KinMS_mcmc_example
   mininc=50.                ;; Min inc
   maxinc=89.                ;; Max inc
   centx=0.0                 ;; Best fit x-pos for kinematic centre
-  mincentx=-2.0             ;; min cent x
-  maxcentx=2.0              ;; max cent x
+  mincentx=-5.0             ;; min cent x
+  maxcentx=5.0              ;; max cent x
   centy=0.0               ;; Best fit y-pos for kinematic centre
-  mincenty=-2.0             ;; min cent y
-  maxcenty=2.0              ;; max cent y
+  mincenty=-5.0             ;; min cent y
+  maxcenty=5.0              ;; max cent y
   voffset= 0.0               ;; Best fit velocity centroid
   minvoffset=-20.0          ;; min velocity centroid
   maxvoffset=+20.0          ;; max velocity centroid
   vflat =  100.41546             ;; vflat
   min_vflat=10              ;; Lower range vflat
   max_vflat=300             ;; Upper range vflat
-  r_ring=10.0              ;; ring radius
+  r_ring=10.0               ;; ring radius
   minr_ring=10.              ;; Lower ring radius
   maxr_ring=25.              ;; Upper ring radius
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-  
+rrad=3.
+minrrad=0.
+maxrrad=6.
 
   
   ;;;; Data cube operations ;;;;;
@@ -98,18 +79,18 @@ pro KinMS_mcmc_example
 
   
 
-
-  names=["intflux","posang","inc",'centx','centy','voffset',"vflat","r-ring"]
+  ;; Names of the fitted parameters
+  names=["intflux","posang","inc",'centx','centy','voffset',"vflat","r-ring","rrad"]
   ;;; best guesses for the parameters
-  guesses=[intflux,posang,inc,centx,centy,voffset,vflat,r_ring]
+  guesses=[intflux,posang,inc,centx,centy,voffset,vflat,r_ring,rrad]
   ;;; minimum values for the parameters. Set this and maxpar to the same as the guess to not fit this parameter
-  minpar=[minintflux,minposang,mininc,mincentx,mincenty,minvoffset,min_vflat,minr_ring]
+  minpar=[minintflux,minposang,mininc,mincentx,mincenty,minvoffset,min_vflat,minr_ring,minrrad]
   ;;; maximum values for the parameters. Set this and minpar to the same as the guess to not fit this parameter
-  maxpar=[maxintflux,maxposang,maxinc,maxcentx,maxcenty,maxvoffset,max_vflat,maxr_ring]
+  maxpar=[maxintflux,maxposang,maxinc,maxcentx,maxcenty,maxvoffset,max_vflat,maxr_ring,maxrrad]
   ;;; How precisely do you need to know a give parameter? Increasing
   ;;; these numbers lets the chain coverge more easily. If set to
   ;;; zero, then 1% of the current best fit value is used.
-  precision=[0.3,1.0,1.0,dx/3.,dy/3.,dv/3.,dv/3.,dx/0.2]
+  precision=[0.3,1.0,1.0,dx/3.,dy/3.,dv/3.,dv/3.,dx/3.,dx/3.]
 
 
   ;;;; Now set up the structure for the fitting
@@ -120,14 +101,12 @@ pro KinMS_mcmc_example
             knob :       replicate(1.0,n_elements(names)), $
             precision :       precision, $
             changeable : (minpar ne maxpar) }
+  
+;;;; and the structure to contain the observational parameters
+  obspars={xsize:xtot,ysize:ytot,vsize:vtot,dx:dx,dy:dy,dv:dv,beamsize:beam,nsamps:1e4,ra:0.d,dec:0.d,vrad:vrad,rms:RMS,intscat:1.d}
+;;;;
 
-  ;;;; and the structure to contain the observational parameters
-  obspars={xsize:xtot,ysize:ytot,vsize:vtot,dx:dx,dy:dy,dv:dv,beamsize:beam,nsamps:1e5,ra:0.d,dec:0.d,vrad:vrad,rms:RMS,intscat:1.d}
-  ;;;;
-
-  ;restore,"NGC4324_bestfit_parsave.sav"
-  ;param.value=outputvalue[*,0]
-;;;; generate best guess model and display it ;;;;
+;;;; generate first guess model to display ;;;;
   !p.multi=[0,1,1]
   fsim= mkkinms_model(param.value)
   lookatplot_mkplot,fdata,fsim,param.value,obspars,xtitle='Position (")',ytitle=textoidl('Velocity (km s^{-1})'),charsize=1.5
@@ -138,19 +117,20 @@ pro KinMS_mcmc_example
 ;;;;
 
 ;;;; Call the MCMC routines - FDATA AND OBSPARS ARE PASSED IN COMMON BLOCK
-  best=KinMS_mcmc(param,finaloutput="NGC4324_bestfit",iters=3000,outputll=outputll)
-  print,"Reduced Chi-sqr:",abs(outputll[0]*2.)/float(n_elements(fdata)-total(param.changeable))
+  best=KinMS_mcmc(param,finaloutput="NGC4324_bestfit",iters=30000,outputll=outputll,silent=silent)
+  print,"Reduced Chi-sqr:",(abs(outputll[0]*2.)+n_elements(fdata))/float(n_elements(fdata)-total(param.changeable))
   meep=""
   read,meep
+;;;;
+
+;;;; generate best model to display ;;;;
   fsim= mkkinms_model(best)
   print,"Best fit model and data"
   lookatplot_mkplot,fdata,fsim,param.value,obspars,xtitle='Position (")',ytitle=textoidl('Velocity (km s^{-1})'),charsize=1.5
-
   meep=""
   read,meep
-
-   mk_chanmap,fdata,fsim,hdr,rms,[5,4],rmsfac=3,chans2do=[1,20]
-   print,"Best fit channel maps"
+  mk_chanmap,fdata,fsim,hdr,rms,[5,4],rmsfac=3,chans2do=[1,20]
+  print,"Best fit channel maps"
 ;;;;
 end
 

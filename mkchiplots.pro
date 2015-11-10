@@ -1,5 +1,16 @@
 
 
+function findchicont,hist,fraction_wanted 
+  order = reverse(sort(hist))
+  sum = total(hist)
+  fract = dblarr(n_elements(hist))
+  for i=0, n_elements(hist) - 1 do begin
+     fract[i] = total(hist[order[0:i]])/sum
+  endfor
+  loc = where(abs(fract - fraction_wanted) eq min(abs(fract - fraction_wanted)))
+  level = hist[order[loc]]
+  return,level[0]
+end
 function like_est,bhmasses,likelihoods,thresh=thresh
   if not keyword_set(thresh) then thresh=0.68
   lev= findchicont(likelihoods,thresh)
@@ -7,6 +18,7 @@ function like_est,bhmasses,likelihoods,thresh=thresh
   error=[min(bhmasses[w]),max(bhmasses[w])]
   return,error
 end
+
 
 function mkhisto,plotval,binvar=binvar,_extra=_extra
   if not keyword_set(binvar) then autobin=1 else autobin=0
@@ -44,18 +56,6 @@ function mkhisto,plotval,binvar=binvar,_extra=_extra
   for j=0,n_elements(w)-1 do polyfill,xfill,yfill,color=200
   plot,xhist,yhist,psym=10,color=0,background=255,ytickname=replicate(' ',10),xmargin=[4,4],xticks=4,yrange=[0,1.1],/ystyle,/xstyle,charsize=2,_extra=_extra,/noerase,yticks=4
   ctload,39
-end
-
-function findchicont,hist,fraction_wanted 
-  order = reverse(sort(hist))
-  sum = total(hist)
-  fract = dblarr(n_elements(hist))
-  for i=0, n_elements(hist) - 1 do begin
-     fract[i] = total(hist[order[0:i]])/sum
-  endfor
-  loc = where(abs(fract - fraction_wanted) eq min(abs(fract - fraction_wanted)))
-  level = hist[order[loc]]
-  return,level
 end
 
 pro mkchiplots,savfile,eps=eps,ranges=ranges,names=names,_extra=_extra,tickinterval=tickinterval,binvar=binvar,tickformat=tickformat
@@ -159,11 +159,11 @@ pro mkchiplots,savfile,eps=eps,ranges=ranges,names=names,_extra=_extra,tickinter
                lev2do=[0,([findchicont(hist,0.95),findchicont(hist,0.68)]>0.01)]
 
 
-               
+              
                cgcontour,hist,(findgen(s[1])*binsize1)+min(plotval1),(findgen(s[2])*binsize2)+min(plotval2),/fill,levels=lev2do,color=255,background=0,charsize=2,/closed,xmargin=xmargin,ymargin=ymargin,xtickname=xtickname,ytickname=ytickname,position=position,xrange=xrange,xtickinterval=xtickinterval,yrange=yrange,ytickinterval=ytickinterval,/xstyle,/ystyle,_extra=_extra,ytickformat=ytickformat,xticks=4,yticks=4 
                fudge=CONVERT_COORD([!D.Y_CH_SIZE,!D.Y_CH_SIZE],/device,/to_norm)/2.
                
-               
+               ; stop
                if first eq 0 then begin
                   numticks=4.
                   ypos = Replicate(!Y.Window[0] - 0.01, numticks+1)
