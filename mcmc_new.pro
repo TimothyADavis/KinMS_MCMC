@@ -65,7 +65,7 @@ function mcmc_new_chain,param,likelihood,model,iter,outputll=outputll,knob=knob,
   seed=systime(/sec)
   values=double(param.value)
   bestll=call_FUNCTION(likelihood,values,model,_EXTRA=ex)
-  outputvals=fltarr(nchange,iter)
+  outputvals=fltarr(n_elements(values),iter)
   outputll=fltarr(iter)
   outputvals[*,0]=values
   outputll[0]=bestll
@@ -95,7 +95,7 @@ function mcmc_new_chain,param,likelihood,model,iter,outputll=outputll,knob=knob,
      ;; print,knob
      if keyword_set(plotchains) then begin
         for k=0,n_elements(change)-1 do begin
-           wind2look=change[k]
+           wind2look=k
            !p=psave[wind2look].p
            !x=psave[wind2look].x
            !y=psave[wind2look].y
