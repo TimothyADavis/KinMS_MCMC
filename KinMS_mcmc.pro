@@ -8,7 +8,7 @@ function KinMS_mcmc,param,_extra=_extra,iters=iters,outputll=outputll,finaloutpu
   
   ;;;;;;;; changeable parameters - rest should be OK as they are
   if n_elements(iters) eq 0 then iters=3000l  ;;; make this bigger to do more samples (get better chi-sqr contours). Smaller for testing.
-  plotit=0                                    ;;; Display plots. Good for testing, somewhat slower for real runs. 
+  plotit=1                                    ;;; Display plots. Good for testing, somewhat slower for real runs. 
   ;;;;;;;;
   print,"Iterations for final run: ",iters
 
@@ -29,7 +29,7 @@ function KinMS_mcmc,param,_extra=_extra,iters=iters,outputll=outputll,finaloutpu
   
   ;;;;;Call MCMC
 
-  mcmc_new,param,iters,50l*total(param.changeable),300,1l,model="mkkinms_model",likelihood="mcmc_new_likelihood",plotchains=plotit,silent=silent,outputll=outputll,outputvalue=outputvalue
+  mcmc_new,param,iters,25l*total(param.changeable),300,1l,model="mkkinms_model",likelihood="mcmc_new_likelihood",plotchains=plotit,silent=silent,outputll=outputll,outputvalue=outputvalue
 
   save,param,outputvalue,obspars,outputll,filename=finaloutput+"_parsave.sav"
   ;;;;;;

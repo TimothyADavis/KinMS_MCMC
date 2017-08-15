@@ -10,7 +10,7 @@ function mkkinms_model,param,_extra=_extra,filename=filename,ret_inclouds=ret_in
     fx=gaussian(x,[1,param[7],param[8]])                                    ;;; Ring morphology
     x1=obspars.vrad                                                   ;;; radius vector for velocity  
     vel=interpol([0,1,1,1],[0.01,1,10,200],x1)*param[6]               ;;; impose a flat velocity profile with a fitted normalisation
-    KinMS,obspars.xsize,obspars.ysize,obspars.vsize,obspars.dx,obspars.dy,obspars.dv,obspars.beamsize,param[2],velrad=x1,velprof=vel,nsamps=obspars.nsamps,cubeout=fsim,posang=param[1],intflux=param[0],gassigma=1.,_extra=_extra,ra=obspars.ra,dec=obspars.dec,phasecen=[param[3],param[4]],voffset=param[5],filename=filename,inclouds=inclouds,sbrad=x,sbprof=fx,/fixseed ;;; run the model.
+    KinMS,obspars.xsize,obspars.ysize,obspars.vsize,obspars.cellsize,obspars.dv,obspars.beamsize,param[2],velrad=x1,velprof=vel,nsamps=obspars.nsamps,cubeout=fsim,posang=param[1],intflux=param[0],gassigma=1.,_extra=_extra,phasecen=[param[3],param[4]],voffset=param[5],filename=filename,inclouds=inclouds,sbrad=x,sbprof=fx,/fixseed ;;; run the model.
     return,fsim
  end
 pro KinMS_mcmc_example
@@ -71,10 +71,9 @@ maxrrad=6.
   beam=[sxpar(hdr,'BMAJ')*3600.,sxpar(hdr,'BMIN')*3600.,sxpar(hdr,'BPA')] ; setup beam
   dv=sxpar(hdr,'CDELT3')/1e3
   vtot=dv*sfdata[3]
-  dx=abs(sxpar(hdr,'CDELT1')*3600.)
-  dy=abs(sxpar(hdr,'CDELT2')*3600.)
-  xtot=dx*sfdata[1]
-  ytot=dy*sfdata[2]
+  cellsize=abs(sxpar(hdr,'CDELT1')*3600.)
+  xtot=cellsize*sfdata[1]
+  ytot=cellsize*sfdata[2]
   ;;;;
 
   
@@ -90,7 +89,7 @@ maxrrad=6.
   ;;; How precisely do you need to know a give parameter? Increasing
   ;;; these numbers lets the chain coverge more easily. If set to
   ;;; zero, then 1% of the current best fit value is used.
-  precision=[0.3,1.0,1.0,dx/3.,dy/3.,dv/3.,dv/3.,dx/3.,dx/3.]
+  precision=[0.3,1.0,1.0,cellsize/3.,cellsize/3.,dv/3.,dv/3.,cellsize/3.,cellsize/3.]
 
 
   ;;;; Now set up the structure for the fitting
@@ -98,12 +97,11 @@ maxrrad=6.
             value :      guesses, $
             max :        maxpar, $ 
             min :        minpar, $
-            knob :       replicate(1.0,n_elements(names)), $
             precision :       precision, $
             changeable : (minpar ne maxpar) }
   
 ;;;; and the structure to contain the observational parameters
-  obspars={xsize:xtot,ysize:ytot,vsize:vtot,dx:dx,dy:dy,dv:dv,beamsize:beam,nsamps:1e4,ra:0.d,dec:0.d,vrad:vrad,rms:RMS,intscat:1.d}
+  obspars={xsize:xtot,ysize:ytot,vsize:vtot,cellsize:cellsize,dv:dv,beamsize:beam,nsamps:1e4,vrad:vrad,rms:RMS}
 ;;;;
 
 ;;;; generate first guess model to display ;;;;

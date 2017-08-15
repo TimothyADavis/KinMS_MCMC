@@ -11,7 +11,7 @@ pro lookatplot_mkplot,fdata,fsim,params,obspars,_extra=_extra,eps=eps
    mom0sim=total(fsim,3)
    mom0data=total(fdataclip,3)
    v1=(findgen(s[3])-(s[3]/2.))*obspars.dv
-   x1=(findgen(s[1])-(s[1]/2.))*obspars.dx
+   x1=(findgen(s[1])-(s[1]/2.))*obspars.cellsize
    mom1sim=mom0sim*0.0
    mom1data=mom0data*0.0
    for i=0,s[1]-1 do begin
