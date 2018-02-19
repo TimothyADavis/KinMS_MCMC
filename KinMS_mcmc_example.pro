@@ -115,7 +115,7 @@ maxrrad=6.
 ;;;;
 
 ;;;; Call the MCMC routines - FDATA AND OBSPARS ARE PASSED IN COMMON BLOCK
-  best=KinMS_mcmc(param,finaloutput="NGC4324_bestfit",iters=30000,outputll=outputll,silent=silent)
+  best=KinMS_mcmc(param,finaloutput="NGC4324_bestfit",iters=30000,outputll=outputll,silent=silent,/log)
   print,"Reduced Chi-sqr:",(abs(outputll[0]*2.)+n_elements(fdata))/float(n_elements(fdata)-total(param.changeable))
   meep=""
   read,meep

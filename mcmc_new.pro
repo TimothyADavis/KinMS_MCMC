@@ -118,11 +118,9 @@ function mcmc_new_take_step,values,bestll,change,knob,min,max,seed,newll,accept,
   dec=0.95
   inc=1.05
   ;;;;;;;
-  if n_elements(log) eq 0 then log=1
   accept=1
   newval=mcmc_new_stepper(values,change,knob,min,max,seed)
   newll = call_FUNCTION(likelihood,newval,model,covar=covar,_extra=ex)
- ; print,newll,bestll
   if keyword_set(log) then begin
     ;; Fit in log likihood. (chi2_new - chi2_best)*0.5
      ratio=  newll-bestll
@@ -133,7 +131,6 @@ function mcmc_new_take_step,values,bestll,change,knob,min,max,seed,newll,accept,
      randacc=randomu(seed,/double)
   endelse
   tried=newval
- ; print,newll,bestll
   if randacc gt ratio then begin
      ;; dont accept if the likelihood ratio is less than the random
      ;; acceptance threshold. Always accepts if the guess is better

@@ -1,5 +1,5 @@
 
-function KinMS_mcmc,param,_extra=_extra,iters=iters,outputll=outputll,finaloutput=finaloutput,silent=silent
+function KinMS_mcmc,param,_extra=_extra,iters=iters,outputll=outputll,finaloutput=finaloutput,silent=silent,log=log
   COMMON KinMS_COMMON, fdata,obspars
   !EXCEPT = 0
   ;;;;;;;;;;;;;;;
@@ -29,7 +29,7 @@ function KinMS_mcmc,param,_extra=_extra,iters=iters,outputll=outputll,finaloutpu
   
   ;;;;;Call MCMC
 
-  mcmc_new,param,iters,25l*total(param.changeable),300,1l,model="mkkinms_model",likelihood="mcmc_new_likelihood",plotchains=plotit,silent=silent,outputll=outputll,outputvalue=outputvalue
+  mcmc_new,param,iters,25l*total(param.changeable),300,1l,model="mkkinms_model",likelihood="mcmc_new_likelihood",plotchains=plotit,silent=silent,outputll=outputll,outputvalue=outputvalue,log=log
 
   save,param,outputvalue,obspars,outputll,filename=finaloutput+"_parsave.sav"
   ;;;;;;
